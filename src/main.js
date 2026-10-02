@@ -278,3 +278,21 @@ document.getElementById('file-input').addEventListener('change', (e) => {
 
 // Expose to window for inline onclick handlers
 window.app = app;
+
+window.addEventListener('DOMContentLoaded', async () => {
+  if (window.__TAURI__) {
+    try {
+      const { check } = window.__TAURI__.updater;
+      const update = await check();
+      if (update) {
+        console.log(`Update tersedia: ${update.version}`);
+        if (confirm(`Pembaruan versi ${update.version} tersedia. Apakah Anda ingin mengunduh dan menginstal sekarang?`)) {
+          await update.downloadAndInstall();
+          console.log('Update terpasang!');
+        }
+      }
+    } catch (err) {
+      console.error("Gagal memeriksa pembaruan:", err);
+    }
+  }
+});
