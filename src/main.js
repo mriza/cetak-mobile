@@ -1,7 +1,7 @@
 // App State
 const state = {
-  token: null,
-  user: null,
+  token: localStorage.getItem('auth_token') || null,
+  user: JSON.parse(localStorage.getItem('auth_user')) || null,
   stationData: null,
   document: null,     // Nama file untuk display
   documentId: null,   // ID Dokumen dari API
@@ -101,6 +101,9 @@ const app = {
       state.token = response.data.token;
       state.user = response.data.user;
       
+      localStorage.setItem('auth_token', state.token);
+      localStorage.setItem('auth_user', JSON.stringify(state.user));
+      
       this.updateDashboardUI();
       btn.innerText = 'Sign In';
       this.navigate('home');
@@ -133,6 +136,9 @@ const app = {
     state.user = null;
     state.document = null;
     state.documentId = null;
+    
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('auth_user');
     
     document.querySelector('.user-info h2').innerText = 'Hi, User';
     document.querySelector('.user-info p').innerHTML = 'Rp 0 <span class="badge">Deposit</span>';
@@ -440,6 +446,13 @@ window.app = app;
 
 window.addEventListener('DOMContentLoaded', async () => {
   app.initTheme();
+  
+  if (state.token && state.user) {
+    app.updateDashboardUI();
+    app.navigate('home');
+  } else {
+    app.navigate('login');
+  }
   
   if (window.__TAURI__) {
     try {
