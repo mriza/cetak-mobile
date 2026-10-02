@@ -11,6 +11,47 @@ const state = {
 
 // Main App Logic
 const app = {
+  initTheme() {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      this.updateThemeIcon(savedTheme);
+    } else {
+      const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+      const theme = prefersLight ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', theme);
+      this.updateThemeIcon(theme);
+    }
+
+    // Watch for system changes
+    window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', e => {
+      if (!localStorage.getItem('theme')) {
+        const theme = e.matches ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', theme);
+        this.updateThemeIcon(theme);
+      }
+    });
+  },
+
+  toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    this.updateThemeIcon(newTheme);
+  },
+
+  updateThemeIcon(theme) {
+    const icon = document.getElementById('theme-icon');
+    if (icon) {
+      if (theme === 'light') {
+        icon.className = 'ph-fill ph-sun';
+      } else {
+        icon.className = 'ph-fill ph-moon';
+      }
+    }
+  },
+
   navigate(viewId) {
     document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
     document.getElementById(`view-${viewId}`).classList.add('active');
@@ -280,6 +321,8 @@ document.getElementById('file-input').addEventListener('change', (e) => {
 window.app = app;
 
 window.addEventListener('DOMContentLoaded', async () => {
+  app.initTheme();
+  
   if (window.__TAURI__) {
     try {
       const { check } = window.__TAURI__.updater;
