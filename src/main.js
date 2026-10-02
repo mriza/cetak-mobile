@@ -1,13 +1,43 @@
 // App State
 const state = {
-  document: null,
+  token: null,
+  user: null,
+  stationData: null,
+  document: null,     // Nama file untuk display
+  documentId: null,   // ID Dokumen dari API
   paper: 'A4',
   color: 'COLOR',
   copies: 1,
-  pricePerPage: 500, // Rp 500
   paymentMethod: 'deposit',
   reportedIssue: null,
+  reportedStationId: null,
+  orderId: null,
 };
+
+const API_BASE = 'https://api-cetak.cerdas.club/api/v1';
+
+// API Helper
+async function apiFetch(endpoint, options = {}) {
+  const headers = { ...options.headers };
+  if (state.token) {
+    headers['Authorization'] = `Bearer ${state.token}`;
+  }
+  
+  if (!(options.body instanceof FormData)) {
+    headers['Content-Type'] = headers['Content-Type'] || 'application/json';
+  }
+
+  const res = await fetch(`${API_BASE}${endpoint}`, {
+    ...options,
+    headers
+  });
+  
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || 'API Error');
+  }
+  return data;
+}
 
 // Main App Logic
 const app = {
@@ -23,7 +53,6 @@ const app = {
       this.updateThemeIcon(theme);
     }
 
-    // Watch for system changes
     window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', e => {
       if (!localStorage.getItem('theme')) {
         const theme = e.matches ? 'light' : 'dark';
@@ -58,117 +87,129 @@ const app = {
   },
 
   async authenticateUser() {
+    const btn = document.querySelector('#login-form button');
     try {
-      const btn = document.querySelector('#login-form button');
       btn.innerText = 'Authenticating...';
       const emailInput = document.querySelector('input[type="email"]').value;
       const passwordInput = document.querySelector('input[type="password"]').value;
       
-      const res = await fetch('https://api-cetak.cerdas.club/api/v1/auth/login', {
+      const response = await apiFetch('/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: emailInput, password: passwordInput })
       });
       
-      const data = await res.json();
-      const username = data.username || data.user?.username || emailInput.split('@')[0];
+      state.token = response.data.token;
+      state.user = response.data.user;
       
-      // Capitalize first letter of username
-      const displayName = username.charAt(0).toUpperCase() + username.slice(1);
-      
-      // Update UI with fetched username
-      document.querySelector('.user-info h2').innerText = `Hi, ${displayName}`;
-      
+      this.updateDashboardUI();
       btn.innerText = 'Sign In';
       this.navigate('home');
     } catch (error) {
       console.error('API Error:', error);
-      alert('Failed to connect to backend.');
-      document.querySelector('#login-form button').innerText = 'Sign In';
+      alert('Login Gagal: ' + error.message);
+      btn.innerText = 'Sign In';
     }
   },
 
-  logout() {
+  updateDashboardUI() {
+    if (state.user) {
+      const username = state.user.username || state.user.email.split('@')[0];
+      const displayName = username.charAt(0).toUpperCase() + username.slice(1);
+      
+      const balance = state.user.balance !== undefined ? state.user.balance : 0;
+      
+      document.querySelector('.user-info h2').innerText = `Hi, ${displayName}`;
+      document.querySelector('.user-info p').innerHTML = `Rp ${balance.toLocaleString('id-ID')} <span class="badge">Deposit</span>`;
+    }
+  },
+
+  async logout() {
+    try {
+      await apiFetch('/auth/logout', { method: 'POST' });
+    } catch (e) {
+      console.warn("Logout error:", e);
+    }
+    state.token = null;
+    state.user = null;
     state.document = null;
-    state.reportedIssue = null;
-    document.querySelector('.user-info h2').innerText = 'Hi, User';
+    state.documentId = null;
     
-    // Clear login form fields
+    document.querySelector('.user-info h2').innerText = 'Hi, User';
+    document.querySelector('.user-info p').innerHTML = 'Rp 0 <span class="badge">Deposit</span>';
+    
     const inputs = document.querySelectorAll('#login-form input');
     inputs.forEach(input => input.value = '');
     
     this.navigate('login');
   },
 
-  selectDocument(docName) {
-    state.document = docName;
-    this.navigate('scan');
+  async uploadDocument(file) {
+    try {
+      const btn = document.getElementById('upload-btn');
+      const originalHtml = btn.innerHTML;
+      btn.innerHTML = '<h4>Mengunggah...</h4>';
+      
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await apiFetch('/documents/upload', {
+        method: 'POST',
+        body: formData,
+        // Fetch automatically sets multipart boundary when body is FormData
+      });
+      
+      state.document = response.data.filename || file.name;
+      state.documentId = response.data.document_id;
+      
+      btn.innerHTML = originalHtml;
+      this.navigate('scan');
+    } catch (e) {
+      alert("Gagal mengunggah dokumen: " + e.message);
+      document.getElementById('upload-btn').innerHTML = `<i class="ph ph-upload-simple upload-icon"></i><h4>Upload Document</h4><p class="text-muted">PDF, DOCX, JPG (Max 10MB)</p>`;
+    }
   },
 
   async startScan() {
     if (window.__TAURI__) {
       try {
         const { invoke } = window.__TAURI__.core;
+        try { await invoke("plugin:barcode-scanner|request_permissions"); } catch (e) {}
         
-        // Meminta izin kamera secara eksplisit ke OS sebelum membuka scanner
-        try {
-          await invoke("plugin:barcode-scanner|request_permissions");
-        } catch (permErr) {
-          console.warn("Permissions check error:", permErr);
-        }
-        
-        // Buka kamera secara native
         const result = await invoke("plugin:barcode-scanner|scan", { windowed: false, formats: ["QR_CODE"] });
         
         if (result && result.content) {
-          try {
-            // Memanggil Backend API Asli untuk memvalidasi/mendapatkan detail printer
-            const res = await fetch(`https://api-cetak.cerdas.club/api/v1/printers/${result.content}`);
-            const data = await res.json();
-            
-            // Mengambil data dari Backend API
-            let printerName = "Kios Printer";
-            let printerStatus = "Siap Mencetak";
-            
-            if (data.name || data.status) {
-                printerName = data.name || printerName;
-                printerStatus = data.status || printerStatus;
-            } else if (result.content) {
-                // Fallback jika API belum diset lengkap oleh user, gunakan ID QR
-                printerName = "Kios " + result.content.substring(0, 6);
-            }
-            
-            // Update UI di halaman config
-            document.getElementById('station-name').innerText = printerName;
-            document.getElementById('station-status').innerText = printerStatus;
-            
-            // Langsung arahkan ke halaman config dengan mulus
-            this.navigate('config');
-          } catch (e) {
-            console.error(e);
-            alert(`Gagal terhubung ke server backend (RandomAPI) untuk verifikasi QR.`);
-            this.navigate('home');
-          }
+          await this.validateStation(result.content);
         }
       } catch (err) {
-        console.error("Scan error:", err);
-        // Jika dijalankan di Windows/Linux (desktop), plugin barcode scanner mungkin belum sepenuhnya diimplementasikan (unimplemented)
-        if (String(err).toLowerCase().includes("unimplemented") || String(err).toLowerCase().includes("not implemented")) {
-          alert("Plugin scanner native belum didukung penuh di OS ini (Desktop). Menggunakan simulasi...");
-          this.navigate('config');
+        if (String(err).toLowerCase().includes("unimplemented")) {
+          alert("Scanner native tidak tersedia, mensimulasikan scan...");
+          await this.validateStation("STA-MKS-01"); // Simulasi ID
         } else {
           alert("Scan dibatalkan.");
         }
       }
     } else {
-      // Fallback jika dibuka di browser biasa
+      await this.validateStation("STA-MKS-01");
+    }
+  },
+
+  async validateStation(stationId) {
+    try {
+      const response = await apiFetch(`/stations/${stationId}`);
+      state.stationData = response.data;
+      
+      document.getElementById('station-name').innerText = state.stationData.name || stationId;
+      document.getElementById('station-status').innerText = state.stationData.status === 'ONLINE' ? 'Siap Mencetak' : 'Offline';
+      
+      this.calculatePrice();
       this.navigate('config');
+    } catch (e) {
+      alert("Gagal memvalidasi mesin: " + e.message);
     }
   },
 
   selectOption(type, value, element) {
     state[type] = value;
-    // Update UI
     const parent = element.parentElement;
     parent.querySelectorAll('.option-card').forEach(el => el.classList.remove('selected'));
     element.classList.add('selected');
@@ -184,21 +225,28 @@ const app = {
     }
   },
 
-  calculatePrice() {
-    // Dummy logic: Base 500, Color +1000, F4 +200
-    let perPage = 500;
-    if (state.color === 'COLOR') perPage += 1000;
-    if (state.paper === 'F4') perPage += 200;
+  async calculatePrice() {
+    if (!state.stationData) return;
     
-    // Assume 12 pages for dummy document
-    const total = perPage * 12 * state.copies;
+    const formatKey = `${state.paper}_${state.color}`;
+    let perPage = 500;
+    
+    // Ambil harga asli dari station data API jika tersedia
+    if (state.stationData.pricing && state.stationData.pricing[formatKey]) {
+       perPage = state.stationData.pricing[formatKey];
+    } else {
+       if (state.color === 'COLOR') perPage = 1000;
+    }
+    
+    // Untuk dummy kita asumsikan 1 halaman (atau bisa di-fetch dari /orders/calculate)
+    const pages = 1; 
+    const total = perPage * pages * state.copies;
     const formatted = `Rp ${total.toLocaleString('id-ID')}`;
     
     document.getElementById('total-price').innerText = formatted;
     document.getElementById('summary-total').innerText = formatted;
     
-    // Update Summary
-    document.getElementById('summary-doc').innerText = state.document;
+    document.getElementById('summary-doc').innerText = state.document || "Dokumen";
     document.getElementById('summary-copies').innerText = state.copies;
     document.getElementById('summary-format').innerText = `${state.paper} ${state.color === 'COLOR' ? 'Color' : 'B&W'}`;
   },
@@ -213,47 +261,79 @@ const app = {
     element.querySelector('.radio-check').classList.add('active');
   },
 
-  executePayment() {
-    this.navigate('status');
-    this.simulateProcess();
+  async executePayment() {
+    try {
+      this.navigate('status');
+      
+      const payload = {
+        station_id: state.stationData.station_id,
+        document_id: state.documentId || "DOC-DUMMY",
+        print_format: `${state.paper}_${state.color}`,
+        copies: state.copies,
+        payment_method: state.paymentMethod
+      };
+      
+      const response = await apiFetch('/orders', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+      
+      state.orderId = response.data.order_id;
+      this.pollOrderStatus();
+      
+    } catch (e) {
+      alert("Gagal memproses pesanan: " + e.message);
+      this.navigate('payment');
+    }
   },
 
-  simulateProcess() {
+  async pollOrderStatus() {
     const progressCircle = document.getElementById('status-progress');
     const title = document.getElementById('status-title');
     const desc = document.getElementById('status-desc');
     const steps = document.querySelectorAll('.step');
     const circumference = 283;
     
-    // Step 1: Payment Confirmed (Immediate)
-    progressCircle.style.strokeDashoffset = circumference - (circumference * 0.25);
-    
-    // Step 2: Downloading
-    setTimeout(() => {
-      steps[1].classList.add('active');
-      title.innerText = 'Downloading File...';
-      desc.innerText = 'Station is downloading your document';
-      progressCircle.style.strokeDashoffset = circumference - (circumference * 0.50);
+    const interval = setInterval(async () => {
+      try {
+        const res = await apiFetch(`/orders/${state.orderId}`);
+        const status = res.data.status;
+        const progress = res.data.progress_percentage || 0;
+        
+        // Update Circle
+        const offset = circumference - (circumference * (progress / 100));
+        progressCircle.style.strokeDashoffset = offset;
+        
+        // Update UI Steps based on status
+        if (status === 'DOWNLOADING') {
+          steps[1].classList.add('active');
+          title.innerText = 'Downloading File...';
+          desc.innerText = 'Station is downloading your document';
+        } else if (status === 'PRINTING') {
+          steps[1].classList.add('active');
+          steps[2].classList.add('active');
+          title.innerText = 'Printing Document...';
+          desc.innerText = 'Please wait, printing in progress';
+        } else if (status === 'COMPLETED') {
+          clearInterval(interval);
+          steps.forEach(s => s.classList.add('active'));
+          title.innerText = 'Printing Completed!';
+          desc.innerText = 'Please take your document from the tray';
+          progressCircle.style.strokeDashoffset = 0;
+          document.querySelector('.status-main-icon').classList.replace('ph-printer-duotone', 'ph-check-circle');
+          document.querySelector('.status-main-icon').style.color = '#10b981';
+          document.getElementById('btn-done').classList.remove('hidden');
+        } else if (status === 'FAILED') {
+          clearInterval(interval);
+          title.innerText = 'Printing Failed!';
+          desc.innerText = 'Please contact support';
+          document.querySelector('.status-main-icon').style.color = '#ef4444';
+          document.getElementById('btn-done').classList.remove('hidden');
+        }
+      } catch (e) {
+        console.warn("Polling error:", e);
+      }
     }, 2000);
-
-    // Step 3: Printing
-    setTimeout(() => {
-      steps[2].classList.add('active');
-      title.innerText = 'Printing Document...';
-      desc.innerText = 'Please wait, printing in progress';
-      progressCircle.style.strokeDashoffset = circumference - (circumference * 0.85);
-    }, 4500);
-
-    // Step 4: Completed
-    setTimeout(() => {
-      steps[3].classList.add('active');
-      title.innerText = 'Printing Completed!';
-      desc.innerText = 'Please take your document from the tray';
-      progressCircle.style.strokeDashoffset = 0;
-      document.querySelector('.status-main-icon').classList.replace('ph-printer-duotone', 'ph-check-circle');
-      document.querySelector('.status-main-icon').style.color = '#10b981'; // success color
-      document.getElementById('btn-done').classList.remove('hidden');
-    }, 7500);
   },
 
   async startReportScan() {
@@ -297,7 +377,7 @@ const app = {
     }
   },
 
-  submitReport() {
+  async submitReport() {
     let issueDetails = state.reportedIssue;
     
     if (!issueDetails) {
@@ -305,27 +385,37 @@ const app = {
       return;
     }
     
+    let description = "";
     if (issueDetails === 'Other') {
-      const otherText = document.getElementById('other-issue-text').value.trim();
-      if (!otherText) {
+      description = document.getElementById('other-issue-text').value.trim();
+      if (!description) {
         alert('Mohon jelaskan masalah yang Anda alami.');
         return;
       }
-      issueDetails = `Lainnya: ${otherText}`;
     }
-
-    // Simulasi pengiriman data
-    console.log('Mengirim Laporan Masalah:', issueDetails, 'Station ID:', state.reportedStationId);
     
-    alert(`Terima kasih! Laporan Anda untuk stasiun ${state.reportedStationId} telah kami terima dan tim teknisi akan segera mengecek mesin tersebut.`);
-    
-    // Reset form
-    state.reportedIssue = null;
-    document.querySelectorAll('.report-card').forEach(el => el.classList.remove('selected'));
-    document.getElementById('other-issue-container').classList.add('hidden');
-    document.getElementById('other-issue-text').value = '';
+    try {
+      await apiFetch(`/stations/${state.reportedStationId}/reports`, {
+        method: 'POST',
+        body: JSON.stringify({
+          issue_category: issueDetails === 'Other' ? 'OTHER' : issueDetails.toUpperCase().replace(' ', '_'),
+          description: description,
+          order_id: state.orderId
+        })
+      });
+      
+      alert(`Terima kasih! Laporan Anda untuk stasiun ${state.reportedStationId} telah kami terima dan tim teknisi akan segera mengecek mesin tersebut.`);
+      
+      // Reset form
+      state.reportedIssue = null;
+      document.querySelectorAll('.report-card').forEach(el => el.classList.remove('selected'));
+      document.getElementById('other-issue-container').classList.add('hidden');
+      document.getElementById('other-issue-text').value = '';
 
-    this.navigate('home');
+      this.navigate('home');
+    } catch (e) {
+      alert("Gagal mengirim laporan: " + e.message);
+    }
   }
 };
 
@@ -341,7 +431,7 @@ document.getElementById('upload-btn').addEventListener('click', () => {
 
 document.getElementById('file-input').addEventListener('change', (e) => {
   if (e.target.files.length > 0) {
-    app.selectDocument(e.target.files[0].name);
+    app.uploadDocument(e.target.files[0]);
   }
 });
 
