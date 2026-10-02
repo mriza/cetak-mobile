@@ -20,10 +20,17 @@ const app = {
     try {
       const btn = document.querySelector('#login-form button');
       btn.innerText = 'Authenticating...';
-      const res = await fetch('https://randomapi.com/api/?key=4F3V-DJCD-NIHJ-KTUM&ref=3ovlk07z');
-      const data = await res.json();
+      const emailInput = document.querySelector('input[type="email"]').value;
+      const passwordInput = document.querySelector('input[type="password"]').value;
       
-      const username = data.info?.user?.username || 'User';
+      const res = await fetch('https://api.cetak.cerdas.club/api/v1/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: emailInput, password: passwordInput })
+      });
+      
+      const data = await res.json();
+      const username = data.username || data.user?.username || emailInput.split('@')[0];
       
       // Capitalize first letter of username
       const displayName = username.charAt(0).toUpperCase() + username.slice(1);
@@ -74,17 +81,17 @@ const app = {
         
         if (result && result.content) {
           try {
-            // Memanggil RandomAPI untuk memvalidasi/mendapatkan detail printer (Backend)
-            const res = await fetch(`https://randomapi.com/api/?key=4F3V-DJCD-NIHJ-KTUM&ref=3ovlk07z&printer_id=${result.content}`);
+            // Memanggil Backend API Asli untuk memvalidasi/mendapatkan detail printer
+            const res = await fetch(`https://api.cetak.cerdas.club/api/v1/printers/${result.content}`);
             const data = await res.json();
             
-            // Mengambil data dari RandomAPI
+            // Mengambil data dari Backend API
             let printerName = "Kios Printer";
             let printerStatus = "Siap Mencetak";
             
-            if (data.results && data.results[0] && data.results[0].printer) {
-                printerName = data.results[0].printer.name || printerName;
-                printerStatus = data.results[0].printer.status || printerStatus;
+            if (data.name || data.status) {
+                printerName = data.name || printerName;
+                printerStatus = data.status || printerStatus;
             } else if (result.content) {
                 // Fallback jika API belum diset lengkap oleh user, gunakan ID QR
                 printerName = "Kios " + result.content.substring(0, 6);
