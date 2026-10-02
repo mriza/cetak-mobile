@@ -44,16 +44,38 @@ jobs:
           echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install "ndk;29.0.13846066"
           echo "NDK_HOME=$ANDROID_HOME/ndk/29.0.13846066" >> $GITHUB_ENV
 
-      - name: Tauri Android Build
+      - name: Tauri Android Build Debug
         run: |
           npm run tauri android init
-          npx tauri android build --debug --apk
+          npx tauri android build --debug --apk --split-per-abi
+
+      - name: Tauri Android Build Release
+        run: |
+          npx tauri android build --apk --split-per-abi
+
+      - name: Self-Sign Release APKs
+        run: |
+          # Generate a keystore on the fly for self-signing
+          keytool -genkey -v -keystore release.jks -keyalg RSA -keysize 2048 -validity 10000 -alias release -storepass password -keypass password -dname "CN=Cetak, OU=Cerdas, O=Cerdas Club, L=Jakarta, S=Jakarta, C=ID"
+          
+          # Find latest build-tools for apksigner
+          APKSIGNER=$(ls -d $ANDROID_HOME/build-tools/* | tail -1)/apksigner
+          
+          # Sign all unsigned APKs
+          shopt -s globstar
+          for apk in src-tauri/gen/android/app/build/outputs/apk/**/*.apk; do
+            if [[ "$apk" == *"-unsigned.apk" ]]; then
+              signed_apk="${apk/-unsigned.apk/-signed.apk}"
+              $APKSIGNER sign --ks release.jks --ks-pass pass:password --ks-key-alias release --key-pass pass:password --out "$signed_apk" "$apk"
+              rm "$apk"
+            fi
+          done
 
       - name: Publish Release
         uses: softprops/action-gh-release@v2
         with:
           fail_on_unmatched_files: true
-          tag_name: "android-build-${{ github.run_number }}"
-          name: "Android APK Release #${{ github.run_number }}"
-          body: "Automated Android APK build from main branch."
+          tag_name: "v0.0.${{ github.run_number }}"
+          name: "Release v0.0.${{ github.run_number }}"
+          body: "Automated Android APK build from main branch. Includes Debug and Release (Self-Signed) split by ABI for smaller size."
           files: src-tauri/gen/android/app/build/outputs/apk/**/*.apk
