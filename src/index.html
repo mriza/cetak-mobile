@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Cetak Mobile App</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="styles.css" />
+    <script type="module" src="main.js" defer></script>
+  </head>
+  <body>
+    <div id="app" class="app-container">
+      
+      <!-- VIEW: LOGIN -->
+      <div id="view-login" class="view active">
+        <div class="glass-panel login-panel">
+          <div class="logo-container">
+            <i class="ph-fill ph-printer logo-icon"></i>
+            <h1>Cetak</h1>
+            <p>Self-Service Printing</p>
+          </div>
+          <form id="login-form">
+            <div class="input-group">
+              <i class="ph ph-envelope"></i>
+              <input type="email" placeholder="Email Address" required />
+            </div>
+            <div class="input-group">
+              <i class="ph ph-lock"></i>
+              <input type="password" placeholder="Password" required />
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+          </form>
+          <div class="login-footer">
+            <a href="#">Forgot password?</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW: HOME (Document Selection) -->
+      <div id="view-home" class="view">
+        <header class="app-header">
+          <div class="user-info">
+            <img src="https://ui-avatars.com/api/?name=User&background=0D8ABC&color=fff" alt="Avatar" class="avatar" />
+            <div>
+              <h2>Hi, User</h2>
+              <p>Rp 150.000 <span class="badge">Deposit</span></p>
+            </div>
+          </div>
+          <div style="display:flex; gap:10px;">
+            <button class="icon-btn" onclick="app.navigate('report')" title="Report Issue"><i class="ph ph-warning-circle"></i></button>
+            <button class="icon-btn" onclick="app.logout()" title="Logout"><i class="ph ph-sign-out"></i></button>
+          </div>
+        </header>
+
+        <main class="content-area">
+          <div class="upload-section glass-card" id="upload-btn">
+            <i class="ph ph-upload-simple upload-icon"></i>
+            <h3>Upload New Document</h3>
+            <p>PDF only, max 20MB</p>
+          </div>
+
+          <div class="section-title">
+            <h3>Recent Documents</h3>
+            <a href="#">View All</a>
+          </div>
+
+          <div class="doc-list">
+            <div class="doc-item glass-list-item" onclick="app.selectDocument('Tugas_Akhir.pdf')">
+              <div class="doc-icon"><i class="ph ph-file-pdf"></i></div>
+              <div class="doc-details">
+                <h4>Tugas_Akhir.pdf</h4>
+                <p>12 pages • 2.4 MB</p>
+              </div>
+              <button class="icon-btn small"><i class="ph ph-printer"></i></button>
+            </div>
+            <div class="doc-item glass-list-item" onclick="app.selectDocument('KTP_Copy.pdf')">
+              <div class="doc-icon"><i class="ph ph-file-pdf"></i></div>
+              <div class="doc-details">
+                <h4>KTP_Copy.pdf</h4>
+                <p>1 page • 0.5 MB</p>
+              </div>
+              <button class="icon-btn small"><i class="ph ph-printer"></i></button>
+            </div>
+          </div>
+        </main>
+        
+        <input type="file" id="file-input" accept="application/pdf" style="display: none;" />
+      </div>
+
+      <!-- VIEW: SCAN (QR Code) -->
+      <div id="view-scan" class="view">
+        <header class="app-header transparent">
+          <button class="icon-btn" onclick="app.navigate('home')"><i class="ph ph-arrow-left"></i></button>
+          <h2>Scan Station</h2>
+          <div style="width: 40px;"></div>
+        </header>
+        
+        <div class="scanner-container">
+          <div class="scanner-frame">
+            <div class="corner top-left"></div>
+            <div class="corner top-right"></div>
+            <div class="corner bottom-left"></div>
+            <div class="corner bottom-right"></div>
+            <div class="scan-line"></div>
+          </div>
+          <p class="scan-instruction">Scan the QR code on the Printing Station</p>
+          <button class="btn btn-secondary mt-20" onclick="app.simulateScan()">Simulate Scan</button>
+        </div>
+      </div>
+
+      <!-- VIEW: CONFIGURATION -->
+      <div id="view-config" class="view">
+         <header class="app-header">
+          <button class="icon-btn" onclick="app.navigate('scan')"><i class="ph ph-arrow-left"></i></button>
+          <h2>Print Options</h2>
+          <div style="width: 40px;"></div>
+        </header>
+
+        <main class="content-area with-bottom-bar">
+          <div class="station-info glass-card mb-20">
+            <div class="station-header">
+              <div class="status-dot online"></div>
+              <h3>Station 01 (Lobby)</h3>
+            </div>
+            <p>Ready to print</p>
+          </div>
+
+          <div class="config-group">
+            <label>Paper Size</label>
+            <div class="options-grid">
+              <div class="option-card selected" onclick="app.selectOption('paper', 'A4', this)">A4</div>
+              <div class="option-card" onclick="app.selectOption('paper', 'F4', this)">F4</div>
+            </div>
+          </div>
+
+          <div class="config-group">
+            <label>Color Mode</label>
+            <div class="options-grid">
+              <div class="option-card" onclick="app.selectOption('color', 'BW', this)">Black & White</div>
+              <div class="option-card selected" onclick="app.selectOption('color', 'COLOR', this)">Color</div>
+            </div>
+          </div>
+
+          <div class="config-group">
+            <label>Copies</label>
+            <div class="counter">
+              <button class="icon-btn small round" onclick="app.updateCopies(-1)"><i class="ph ph-minus"></i></button>
+              <span id="copies-count">1</span>
+              <button class="icon-btn small round" onclick="app.updateCopies(1)"><i class="ph ph-plus"></i></button>
+            </div>
+          </div>
+        </main>
+
+        <div class="bottom-action-bar">
+          <div class="price-summary">
+            <span>Total</span>
+            <h3 id="total-price">Rp 5.000</h3>
+          </div>
+          <button class="btn btn-primary" onclick="app.navigate('payment')">Continue</button>
+        </div>
+      </div>
+
+      <!-- VIEW: PAYMENT -->
+      <div id="view-payment" class="view">
+        <header class="app-header">
+          <button class="icon-btn" onclick="app.navigate('config')"><i class="ph ph-arrow-left"></i></button>
+          <h2>Payment</h2>
+          <div style="width: 40px;"></div>
+        </header>
+
+        <main class="content-area with-bottom-bar">
+          <div class="glass-card mb-20">
+            <h3>Order Summary</h3>
+            <div class="summary-row"><span>Document</span><span id="summary-doc">Tugas_Akhir.pdf</span></div>
+            <div class="summary-row"><span>Pages</span><span>12</span></div>
+            <div class="summary-row"><span>Copies</span><span id="summary-copies">1</span></div>
+            <div class="summary-row"><span>Format</span><span id="summary-format">A4 Color</span></div>
+            <hr class="divider">
+            <div class="summary-row total"><span>Total Amount</span><span id="summary-total">Rp 5.000</span></div>
+          </div>
+
+          <h3 class="mb-10">Payment Method</h3>
+          <div class="payment-methods">
+            <div class="payment-method glass-list-item selected" onclick="app.selectPayment('deposit', this)">
+              <div class="pm-icon"><i class="ph ph-wallet"></i></div>
+              <div class="pm-details">
+                <h4>Deposit Balance</h4>
+                <p>Available: Rp 150.000</p>
+              </div>
+              <div class="radio-check active"></div>
+            </div>
+            <div class="payment-method glass-list-item" onclick="app.selectPayment('qris', this)">
+              <div class="pm-icon"><i class="ph ph-qr-code"></i></div>
+              <div class="pm-details">
+                <h4>QRIS</h4>
+                <p>E-Wallet & Mobile Banking</p>
+              </div>
+              <div class="radio-check"></div>
+            </div>
+          </div>
+        </main>
+
+        <div class="bottom-action-bar">
+          <button class="btn btn-primary btn-block" onclick="app.executePayment()">Pay & Print</button>
+        </div>
+      </div>
+
+      <!-- VIEW: STATUS -->
+      <div id="view-status" class="view">
+        <div class="status-container">
+          <div class="progress-ring">
+            <svg viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="45" class="bg-circle"></circle>
+              <circle cx="50" cy="50" r="45" class="progress-circle" id="status-progress"></circle>
+            </svg>
+            <i class="ph ph-printer-duotone status-main-icon"></i>
+          </div>
+          
+          <h2 id="status-title" class="mt-20">Sending to Station...</h2>
+          <p id="status-desc">Please wait in front of Station 01</p>
+
+          <div class="status-steps mt-20">
+            <div class="step active" id="step-1">
+              <div class="step-dot"></div>
+              <span>Payment Confirmed</span>
+            </div>
+            <div class="step" id="step-2">
+              <div class="step-dot"></div>
+              <span>Downloading File</span>
+            </div>
+            <div class="step" id="step-3">
+              <div class="step-dot"></div>
+              <span>Printing...</span>
+            </div>
+            <div class="step" id="step-4">
+              <div class="step-dot"></div>
+              <span>Completed</span>
+            </div>
+          </div>
+          
+          <button id="btn-done" class="btn btn-primary btn-block mt-20 hidden" onclick="app.navigate('home')">Done</button>
+          <button class="btn btn-secondary btn-block mt-10" onclick="app.navigate('report')">Report an Issue</button>
+        </div>
+      </div>
+
+      <!-- VIEW: REPORT ISSUE -->
+      <div id="view-report" class="view">
+        <header class="app-header">
+          <button class="icon-btn" onclick="app.navigate('home')"><i class="ph ph-arrow-left"></i></button>
+          <h2>Report Issue</h2>
+          <div style="width: 40px;"></div>
+        </header>
+        
+        <main class="content-area with-bottom-bar">
+          <p class="mb-20 text-muted">Ada masalah dengan mesin? Pilih jenis kendala yang sedang terjadi.</p>
+          
+          <div class="report-options">
+            <div class="report-card glass-list-item" onclick="app.selectIssue('Paper Jam', this)">
+              <div class="report-icon"><i class="ph ph-warning"></i></div>
+              <div class="report-details">
+                <h4>Kertas Tersangkut (Paper Jam)</h4>
+              </div>
+            </div>
+            <div class="report-card glass-list-item" onclick="app.selectIssue('Printer Offline', this)">
+              <div class="report-icon"><i class="ph ph-plugs"></i></div>
+              <div class="report-details">
+                <h4>Printer Offline / Mati</h4>
+              </div>
+            </div>
+            <div class="report-card glass-list-item" onclick="app.selectIssue('Bad Quality', this)">
+              <div class="report-icon"><i class="ph ph-drop"></i></div>
+              <div class="report-details">
+                <h4>Hasil Cetak Buram / Tinta Habis</h4>
+              </div>
+            </div>
+            <div class="report-card glass-list-item" onclick="app.selectIssue('Other', this)">
+              <div class="report-icon"><i class="ph ph-chat-circle-dots"></i></div>
+              <div class="report-details">
+                <h4>Masalah Lainnya</h4>
+              </div>
+            </div>
+          </div>
+
+          <div id="other-issue-container" class="mt-20 hidden">
+            <textarea id="other-issue-text" class="glass-textarea" rows="4" placeholder="Jelaskan masalah yang Anda alami..."></textarea>
+          </div>
+        </main>
+        
+        <div class="bottom-action-bar">
+          <button class="btn btn-primary btn-block" onclick="app.submitReport()">Kirim Laporan</button>
+        </div>
+      </div>
+
+    </div>
+  </body>
+</html>

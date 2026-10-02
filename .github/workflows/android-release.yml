@@ -1,0 +1,58 @@
+name: Android Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android, armv7-linux-androideabi, i686-linux-android, x86_64-linux-android
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+
+      - name: Install NPM dependencies
+        run: npm install
+
+      - name: Setup Android NDK
+        run: |
+          echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install "ndk;29.0.13846066"
+          echo "NDK_HOME=$ANDROID_HOME/ndk/29.0.13846066" >> $GITHUB_ENV
+
+      - name: Tauri Android Build
+        run: |
+          npm run tauri android init
+          npm run tauri android build
+
+      - name: Publish Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "android-build-${{ github.run_number }}"
+          name: "Android APK Release #${{ github.run_number }}"
+          body: "Automated Android APK build from main branch."
+          files: src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk
