@@ -23,7 +23,7 @@ const app = {
       const emailInput = document.querySelector('input[type="email"]').value;
       const passwordInput = document.querySelector('input[type="password"]').value;
       
-      const res = await fetch('https://api.cetak.cerdas.club/api/v1/auth/login', {
+      const res = await fetch('https://api-cetak.cerdas.club/api/v1/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: emailInput, password: passwordInput })
@@ -82,7 +82,7 @@ const app = {
         if (result && result.content) {
           try {
             // Memanggil Backend API Asli untuk memvalidasi/mendapatkan detail printer
-            const res = await fetch(`https://api.cetak.cerdas.club/api/v1/printers/${result.content}`);
+            const res = await fetch(`https://api-cetak.cerdas.club/api/v1/printers/${result.content}`);
             const data = await res.json();
             
             // Mengambil data dari Backend API
