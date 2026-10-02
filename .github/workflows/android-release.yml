@@ -71,6 +71,26 @@ jobs:
             fi
           done
 
+      - name: Generate updater.json
+        run: |
+          cat <<EOF > updater.json
+          {
+            "version": "${{ github.ref_name }}",
+            "notes": "Automated release.",
+            "pub_date": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+            "platforms": {
+              "android-aarch64": {
+                "signature": "WILL_NOT_USE_SIGNATURE_ON_ANDROID",
+                "url": "https://github.com/mriza/cetak-mobile/releases/download/${{ github.ref_name }}/app-universal-release-signed.apk"
+              },
+              "android-armv7": {
+                "signature": "WILL_NOT_USE_SIGNATURE_ON_ANDROID",
+                "url": "https://github.com/mriza/cetak-mobile/releases/download/${{ github.ref_name }}/app-universal-release-signed.apk"
+              }
+            }
+          }
+          EOF
+
       - name: Publish Release
         uses: softprops/action-gh-release@v2
         with:
@@ -78,4 +98,6 @@ jobs:
           tag_name: "${{ github.ref_name }}"
           name: "Release ${{ github.ref_name }}"
           body: "Automated Android APK build from tag ${{ github.ref_name }}. Includes Debug and Release (Self-Signed) split by ABI for smaller size."
-          files: src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+          files: |
+            src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+            updater.json
