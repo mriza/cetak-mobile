@@ -47,12 +47,13 @@ jobs:
       - name: Tauri Android Build
         run: |
           npm run tauri android init
-          npm run tauri android build
+          npx tauri android build --apk
 
       - name: Publish Release
         uses: softprops/action-gh-release@v2
         with:
+          fail_on_unmatched_files: true
           tag_name: "android-build-${{ github.run_number }}"
           name: "Android APK Release #${{ github.run_number }}"
           body: "Automated Android APK build from main branch."
-          files: src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk
+          files: src-tauri/gen/android/app/build/outputs/apk/**/*.apk
