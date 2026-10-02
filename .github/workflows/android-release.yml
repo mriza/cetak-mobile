@@ -47,11 +47,11 @@ jobs:
       - name: Tauri Android Build Debug
         run: |
           npm run tauri android init
-          npx tauri android build --debug --apk --split-per-abi
+          npx tauri android build --debug --apk
 
       - name: Tauri Android Build Release
         run: |
-          npx tauri android build --apk --split-per-abi
+          npx tauri android build --apk
 
       - name: Self-Sign Release APKs
         run: |

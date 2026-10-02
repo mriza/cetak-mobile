@@ -20,10 +20,14 @@ android {
     defaultConfig {
         manifestPlaceholders["usesCleartextTraffic"] = "false"
         applicationId = "club.cerdas.cetakmobile"
-        minSdk = 24
+        minSdk = 30
         targetSdk = 37
         versionCode = tauriProperties.getProperty("tauri.android.versionCode", "1").toInt()
         versionName = tauriProperties.getProperty("tauri.android.versionName", "1.0")
+        ndk {
+            abiFilters.add("armeabi-v7a")
+            abiFilters.add("arm64-v8a")
+        }
     }
     buildTypes {
         getByName("debug") {
@@ -40,7 +44,7 @@ android {
         }
         getByName("release") {
             optimization {
-               enable = false
+               enable = true
             }
             proguardFiles(
                 *fileTree(".") {

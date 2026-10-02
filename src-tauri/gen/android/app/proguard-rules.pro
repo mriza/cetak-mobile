@@ -19,3 +19,9 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+-keep class com.google.mlkit.** { *; }
+-keep class com.google.android.gms.** { *; }
+-keep class app.tauri.barcodescanner.** { *; }
+-dontwarn com.google.mlkit.**
+-dontwarn app.tauri.barcodescanner.**
