@@ -107,7 +107,7 @@
             <div class="scan-line"></div>
           </div>
           <p class="scan-instruction">Scan the QR code on the Printing Station</p>
-          <button class="btn btn-secondary mt-20" onclick="app.simulateScan()">Simulate Scan</button>
+          <button class="btn btn-secondary mt-20 btn-block" onclick="app.startScan()">Buka Kamera & Scan QR</button>
         </div>
       </div>
 
@@ -122,10 +122,10 @@
         <main class="content-area with-bottom-bar">
           <div class="station-info glass-card mb-20">
             <div class="station-header">
-              <div class="status-dot online"></div>
-              <h3>Station 01 (Lobby)</h3>
+              <div class="status-dot online" id="station-status-dot"></div>
+              <h3 id="station-name">Station 01 (Lobby)</h3>
             </div>
-            <p>Ready to print</p>
+            <p id="station-status">Ready to print</p>
           </div>
 
           <div class="config-group">

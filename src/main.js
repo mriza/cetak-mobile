@@ -20,7 +20,7 @@ const app = {
     try {
       const btn = document.querySelector('#login-form button');
       btn.innerText = 'Authenticating...';
-      const res = await fetch('https://randomapi.com/api/fqlpxris?key=4F3V-DJCD-NIHJ-KTUM');
+      const res = await fetch('https://randomapi.com/api/?key=4F3V-DJCD-NIHJ-KTUM&ref=3ovlk07z');
       const data = await res.json();
       
       const username = data.info?.user?.username || 'User';
@@ -57,8 +57,65 @@ const app = {
     this.navigate('scan');
   },
 
-  simulateScan() {
-    this.navigate('config');
+  async startScan() {
+    if (window.__TAURI__) {
+      try {
+        const { invoke } = window.__TAURI__.core;
+        
+        // Meminta izin kamera secara eksplisit ke OS sebelum membuka scanner
+        try {
+          await invoke("plugin:barcode-scanner|request_permissions");
+        } catch (permErr) {
+          console.warn("Permissions check error:", permErr);
+        }
+        
+        // Buka kamera secara native
+        const result = await invoke("plugin:barcode-scanner|scan", { windowed: false, formats: ["QR_CODE"] });
+        
+        if (result && result.content) {
+          try {
+            // Memanggil RandomAPI untuk memvalidasi/mendapatkan detail printer (Backend)
+            const res = await fetch(`https://randomapi.com/api/?key=4F3V-DJCD-NIHJ-KTUM&ref=3ovlk07z&printer_id=${result.content}`);
+            const data = await res.json();
+            
+            // Mengambil data dari RandomAPI
+            let printerName = "Kios Printer";
+            let printerStatus = "Siap Mencetak";
+            
+            if (data.results && data.results[0] && data.results[0].printer) {
+                printerName = data.results[0].printer.name || printerName;
+                printerStatus = data.results[0].printer.status || printerStatus;
+            } else if (result.content) {
+                // Fallback jika API belum diset lengkap oleh user, gunakan ID QR
+                printerName = "Kios " + result.content.substring(0, 6);
+            }
+            
+            // Update UI di halaman config
+            document.getElementById('station-name').innerText = printerName;
+            document.getElementById('station-status').innerText = printerStatus;
+            
+            // Langsung arahkan ke halaman config dengan mulus
+            this.navigate('config');
+          } catch (e) {
+            console.error(e);
+            alert(`Gagal terhubung ke server backend (RandomAPI) untuk verifikasi QR.`);
+            this.navigate('home');
+          }
+        }
+      } catch (err) {
+        console.error("Scan error:", err);
+        // Jika dijalankan di Windows/Linux (desktop), plugin barcode scanner mungkin belum sepenuhnya diimplementasikan (unimplemented)
+        if (String(err).toLowerCase().includes("unimplemented") || String(err).toLowerCase().includes("not implemented")) {
+          alert("Plugin scanner native belum didukung penuh di OS ini (Desktop). Menggunakan simulasi...");
+          this.navigate('config');
+        } else {
+          alert("Scan dibatalkan.");
+        }
+      }
+    } else {
+      // Fallback jika dibuka di browser biasa
+      this.navigate('config');
+    }
   },
 
   selectOption(type, value, element) {

@@ -2,8 +2,8 @@ name: Android Release
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - 'v*'
 
 jobs:
   build-android:
@@ -75,7 +75,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           fail_on_unmatched_files: true
-          tag_name: "v0.0.${{ github.run_number }}"
-          name: "Release v0.0.${{ github.run_number }}"
-          body: "Automated Android APK build from main branch. Includes Debug and Release (Self-Signed) split by ABI for smaller size."
+          tag_name: "${{ github.ref_name }}"
+          name: "Release ${{ github.ref_name }}"
+          body: "Automated Android APK build from tag ${{ github.ref_name }}. Includes Debug and Release (Self-Signed) split by ABI for smaller size."
           files: src-tauri/gen/android/app/build/outputs/apk/**/*.apk
