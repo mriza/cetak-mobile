@@ -1,18 +1,19 @@
 /* ========== CSS VARIABLES & RESET ========== */
 :root {
   /* Colors */
-  --bg-dark: #0f172a;
-  --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
-  --primary: #6366f1;
-  --primary-hover: #4f46e5;
-  --secondary: #ec4899;
+  --bg-dark: #010538;
+  --bg-gradient: linear-gradient(135deg, #010538 0%, #0B3B69 100%);
+  --primary: #FED442;
+  --primary-hover: #E5B82A;
+  --primary-text: #010538;
+  --secondary: #8B92AB;
   --success: #10b981;
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
+  --text-main: #CFDAE5;
+  --text-muted: #8B92AB;
   
   /* Glassmorphism */
-  --glass-bg: rgba(255, 255, 255, 0.05);
-  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-bg: rgba(207, 218, 229, 0.05);
+  --glass-border: rgba(207, 218, 229, 0.1);
   --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
   
   /* Layout */
@@ -23,18 +24,19 @@
 }
 
 [data-theme="light"] {
-  --bg-dark: #f1f5f9;
-  --bg-gradient: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
-  --primary: #4f46e5;
-  --primary-hover: #4338ca;
-  --secondary: #db2777;
+  --bg-dark: #F4F7FA;
+  --bg-gradient: linear-gradient(135deg, #F4F7FA 0%, #CFDAE5 100%);
+  --primary: #0B3B69;
+  --primary-hover: #010538;
+  --primary-text: #FFFFFF;
+  --secondary: #FED442;
   --success: #059669;
-  --text-main: #0f172a;
+  --text-main: #010538;
   --text-muted: #475569;
   
   --glass-bg: rgba(255, 255, 255, 0.7);
   --glass-border: rgba(255, 255, 255, 0.5);
-  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+  --glass-shadow: 0 8px 32px 0 rgba(11, 59, 105, 0.15);
 }
 
 * {
@@ -156,8 +158,8 @@ h1, h2, h3, h4 {
 
 .btn-primary {
   background: var(--primary);
-  color: white;
-  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+  color: var(--primary-text);
+  box-shadow: 0 4px 15px rgba(254, 212, 66, 0.4);
 }
 .btn-primary:hover { background: var(--primary-hover); }
 
