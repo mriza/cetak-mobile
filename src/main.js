@@ -256,6 +256,34 @@ const app = {
     }, 7500);
   },
 
+  async startReportScan() {
+    if (window.__TAURI__) {
+      try {
+        const { invoke } = window.__TAURI__.core;
+        try { await invoke("plugin:barcode-scanner|request_permissions"); } catch (e) {}
+        const result = await invoke("plugin:barcode-scanner|scan", { windowed: false, formats: ["QR_CODE"] });
+        
+        if (result && result.content) {
+          state.reportedStationId = result.content;
+          document.getElementById('report-station-id').innerText = state.reportedStationId;
+          this.navigate('report');
+        }
+      } catch (err) {
+        if (!String(err).toLowerCase().includes("unimplemented") && !String(err).toLowerCase().includes("cancel")) {
+          alert("Gagal membaca barcode: " + err);
+        } else {
+          state.reportedStationId = "STA-DEV-1";
+          document.getElementById('report-station-id').innerText = state.reportedStationId;
+          this.navigate('report');
+        }
+      }
+    } else {
+      state.reportedStationId = "STA-DEV-1";
+      document.getElementById('report-station-id').innerText = state.reportedStationId;
+      this.navigate('report');
+    }
+  },
+
   selectIssue(issueType, element) {
     state.reportedIssue = issueType;
     document.querySelectorAll('.report-card').forEach(el => el.classList.remove('selected'));
@@ -287,9 +315,9 @@ const app = {
     }
 
     // Simulasi pengiriman data
-    console.log('Mengirim Laporan Masalah:', issueDetails);
+    console.log('Mengirim Laporan Masalah:', issueDetails, 'Station ID:', state.reportedStationId);
     
-    alert('Terima kasih! Laporan Anda telah kami terima dan tim teknisi akan segera mengecek mesin tersebut.');
+    alert(`Terima kasih! Laporan Anda untuk stasiun ${state.reportedStationId} telah kami terima dan tim teknisi akan segera mengecek mesin tersebut.`);
     
     // Reset form
     state.reportedIssue = null;

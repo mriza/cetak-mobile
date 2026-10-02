@@ -51,7 +51,7 @@
           </div>
           <div style="display:flex; gap:10px;">
             <button class="icon-btn" onclick="app.toggleTheme()" title="Toggle Theme"><i id="theme-icon" class="ph ph-moon"></i></button>
-            <button class="icon-btn" onclick="app.navigate('report')" title="Report Issue"><i class="ph ph-warning-circle"></i></button>
+            <button class="icon-btn" onclick="app.startReportScan()" title="Report Issue"><i class="ph ph-warning-circle"></i></button>
             <button class="icon-btn" onclick="app.logout()" title="Logout"><i class="ph ph-sign-out"></i></button>
           </div>
         </header>
@@ -243,7 +243,7 @@
           </div>
           
           <button id="btn-done" class="btn btn-primary btn-block mt-20 hidden" onclick="app.navigate('home')">Done</button>
-          <button class="btn btn-secondary btn-block mt-10" onclick="app.navigate('report')">Report an Issue</button>
+          <button class="btn btn-secondary btn-block mt-10" onclick="app.startReportScan()">Report an Issue</button>
         </div>
       </div>
 
@@ -256,6 +256,9 @@
         </header>
         
         <main class="content-area with-bottom-bar">
+          <div class="glass-card mb-20">
+            <div class="summary-row"><span>Station ID</span><strong id="report-station-id">-</strong></div>
+          </div>
           <p class="mb-20 text-muted">Ada masalah dengan mesin? Pilih jenis kendala yang sedang terjadi.</p>
           
           <div class="report-options">
