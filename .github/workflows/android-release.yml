@@ -47,7 +47,7 @@ jobs:
       - name: Tauri Android Build
         run: |
           npm run tauri android init
-          npx tauri android build --apk
+          npx tauri android build --debug --apk
 
       - name: Publish Release
         uses: softprops/action-gh-release@v2
